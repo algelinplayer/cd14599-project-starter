@@ -2,9 +2,27 @@ from flask import Flask, request, jsonify, send_from_directory
 from backend.order_tracker import OrderTracker
 from backend.in_memory_storage import InMemoryStorage
 
+
+class ApiError(Exception):
+    def __init__(self, message: str, status_code: int = 400):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(message)
+
+
 app = Flask(__name__, static_folder='../frontend')
 in_memory_storage = InMemoryStorage()
 order_tracker = OrderTracker(in_memory_storage)
+
+
+@app.errorhandler(ApiError)
+def handle_api_error(error):
+    return jsonify({'error': error.message}), error.status_code
+
+
+@app.errorhandler(ValueError)
+def handle_value_error(error):
+    return jsonify({'error': str(error)}), 400
 
 @app.route('/')
 def serve_index():
@@ -25,20 +43,18 @@ def add_order_api():
             data.get('customer_id'),
             data.get('status', 'pending'),
         )
-        return jsonify(order), 201
     except ValueError as exc:
-        status_code = 409 if 'already exists' in str(exc) else 400
-        return jsonify({'error': str(exc)}), status_code
+        if 'already exists' in str(exc):
+            raise ApiError(str(exc), 409) from exc
+        raise
+    return jsonify(order), 201
 
 @app.route('/api/orders/<string:order_id>', methods=['GET'])
 def get_order_api(order_id):
-    try:
-        order = order_tracker.get_order_by_id(order_id)
-    except ValueError as exc:
-        return jsonify({'error': str(exc)}), 400
+    order = order_tracker.get_order_by_id(order_id)
 
     if not order:
-        return jsonify({'error': 'Order not found'}), 404
+        raise ApiError('Order not found', 404)
     return jsonify(order), 200
 
 @app.route('/api/orders/<string:order_id>/status', methods=['PUT'])
