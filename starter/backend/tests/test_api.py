@@ -51,3 +51,48 @@ def test_list_orders_by_status_api_matching(client):
     assert response.status_code == 200
     assert len(response.json) == 1
     assert response.json[0]['order_id'] == "S001"
+
+
+def test_add_order_api_duplicate_returns_conflict(client):
+    order_data = {
+        "order_id": "DUP001", "item_name": "Laptop", "quantity": 1, "customer_id": "C1"
+    }
+    first = client.post('/api/orders', json=order_data)
+    second = client.post('/api/orders', json=order_data)
+
+    assert first.status_code == 201
+    assert second.status_code == 409
+    assert "already exists" in second.json['error']
+
+
+def test_get_order_api_invalid_id_returns_bad_request(client):
+    response = client.get('/api/orders/%20')
+
+    assert response.status_code == 400
+    assert "order_id" in response.json['error']
+
+
+def test_update_order_status_api_invalid_status_returns_bad_request(client):
+    client.post('/api/orders', json={
+        "order_id": "INV001", "item_name": "Test Item", "quantity": 1, "customer_id": "C1"
+    })
+
+    response = client.put('/api/orders/INV001/status', json={"new_status": "in_transit"})
+
+    assert response.status_code == 400
+    assert "new_status" in response.json['error']
+
+
+def test_list_orders_by_status_api_invalid_status_returns_bad_request(client):
+    response = client.get('/api/orders?status=unknown')
+
+    assert response.status_code == 400
+    assert "status" in response.json['error']
+
+
+def test_static_routes_return_assets(client):
+    index_response = client.get('/')
+    css_response = client.get('/css/style.css')
+
+    assert index_response.status_code == 200
+    assert css_response.status_code == 200
