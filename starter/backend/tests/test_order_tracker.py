@@ -195,3 +195,30 @@ def test_list_orders_by_status_returns_empty_when_no_match(order_tracker, mock_s
 def test_list_orders_by_status_raises_for_invalid_status(order_tracker):
     with pytest.raises(ValueError, match="status must be one of"):
         order_tracker.list_orders_by_status("unknown")
+
+
+def test_delete_order_by_id_success(order_tracker, mock_storage):
+    mock_storage.get_order.return_value = {
+        "order_id": "ORD001",
+        "item_name": "Laptop",
+        "quantity": 1,
+        "customer_id": "CUST001",
+        "status": "pending",
+    }
+
+    deleted_order = order_tracker.delete_order_by_id("ORD001")
+
+    assert deleted_order["order_id"] == "ORD001"
+    mock_storage.delete_order.assert_called_once_with("ORD001")
+
+
+def test_delete_order_by_id_raises_for_missing_order(order_tracker, mock_storage):
+    mock_storage.get_order.return_value = None
+
+    with pytest.raises(ValueError, match="Order with ID 'ORD404' does not exist."):
+        order_tracker.delete_order_by_id("ORD404")
+
+
+def test_delete_order_by_id_raises_for_empty_order_id(order_tracker):
+    with pytest.raises(ValueError, match="order_id must be a non-empty string."):
+        order_tracker.delete_order_by_id("")

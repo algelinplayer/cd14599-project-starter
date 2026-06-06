@@ -7,7 +7,7 @@ class OrderTracker:
     and retrieve order information.
     """
     def __init__(self, storage):
-        required_methods = ['save_order', 'get_order', 'get_all_orders']
+        required_methods = ['save_order', 'get_order', 'get_all_orders', 'delete_order']
         for method in required_methods:
             if not hasattr(storage, method) or not callable(getattr(storage, method)):
                 raise TypeError(f"Storage object must implement a callable '{method}' method.")
@@ -69,3 +69,13 @@ class OrderTracker:
         self._validate_status(status, "status")
         all_orders = self.list_all_orders()
         return [order for order in all_orders if order.get("status") == status]
+
+    def delete_order_by_id(self, order_id: str):
+        self._validate_non_empty_string(order_id, "order_id")
+
+        order = self.storage.get_order(order_id)
+        if not order:
+            raise ValueError(f"Order with ID '{order_id}' does not exist.")
+
+        self.storage.delete_order(order_id)
+        return order
