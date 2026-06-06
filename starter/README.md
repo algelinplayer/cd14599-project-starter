@@ -8,13 +8,111 @@
 
 ## API Reference
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/orders` | POST | Create a new order. |
-| `/api/orders/<order_id>` | GET | Retrieve one order by ID. |
-| `/api/orders/<order_id>/status` | PUT | Update order status. |
-| `/api/orders` | GET | List orders. Supports `status` and `customer_id` query params. |
-| `/api/orders/<order_id>` | DELETE | Delete an order by ID. |
+The full OpenAPI specification is also available at `starter/openapi.yaml`.
+
+```yaml
+openapi: 3.0.3
+info:
+  title: Udatracker Order API
+  version: 1.0.0
+paths:
+  /api/orders:
+    get:
+      summary: List orders
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, processing, shipped, delivered, cancelled]
+        - in: query
+          name: customer_id
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Orders returned
+        "400":
+          description: Validation error
+    post:
+      summary: Create order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [order_id, item_name, quantity, customer_id]
+              properties:
+                order_id: { type: string }
+                item_name: { type: string }
+                quantity: { type: integer, minimum: 1 }
+                customer_id: { type: string }
+                status:
+                  type: string
+                  enum: [pending, processing, shipped, delivered, cancelled]
+      responses:
+        "201":
+          description: Order created
+        "400":
+          description: Validation error
+        "409":
+          description: Duplicate order ID
+  /api/orders/{order_id}:
+    get:
+      summary: Get order by ID
+      parameters:
+        - in: path
+          name: order_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order found
+        "404":
+          description: Order not found
+    delete:
+      summary: Delete order by ID
+      parameters:
+        - in: path
+          name: order_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Order deleted
+        "404":
+          description: Order not found
+  /api/orders/{order_id}/status:
+    put:
+      summary: Update order status
+      parameters:
+        - in: path
+          name: order_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_status]
+              properties:
+                new_status:
+                  type: string
+                  enum: [pending, processing, shipped, delivered, cancelled]
+      responses:
+        "200":
+          description: Status updated
+        "400":
+          description: Validation error
+        "404":
+          description: Order not found
+```
 
 ### Sample curl commands
 
