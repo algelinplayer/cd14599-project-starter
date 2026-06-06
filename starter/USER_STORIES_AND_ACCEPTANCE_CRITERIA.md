@@ -47,11 +47,38 @@
 - Empty or invalid status is rejected.
 - API: `GET /api/orders?status=<status>` returns `200` with matching orders.
 
+## US-06: Filter Orders by Customer
+**User Story:** As an operator, I want to filter orders by customer ID so I can review one customer’s orders quickly.
+
+**Acceptance Criteria:**
+- API: `GET /api/orders?customer_id=<customer_id>` returns only matching customer orders.
+- API supports combined filtering with status (e.g., `?customer_id=C123&status=pending`).
+- Empty customer filter is rejected with a validation error and a JSON error response.
+
+## US-07: Delete an Order
+**User Story:** As an operator, I want to delete an order so incorrect or cancelled records can be removed.
+
+**Acceptance Criteria:**
+- `delete_order_by_id` deletes an existing order and returns deleted order data.
+- Deleting a non-existent order returns a not-found style error.
+- Empty order ID is rejected.
+- API: `DELETE /api/orders/<order_id>` returns `204 No Content` on success.
+
+## US-08: Consistent API Error Responses
+**User Story:** As an API consumer, I want consistent error JSON payloads so client-side handling is predictable.
+
+**Acceptance Criteria:**
+- Validation failures return `400` with `{"error": "message"}`.
+- Missing resources return `404` with `{"error": "message"}`.
+- Conflict cases (duplicate order ID) return `409` with `{"error": "message"}`.
+- Error response formatting is centralized via Flask error handlers.
+
 ---
 
 ## Progress Tracking
 - [x] Step 1 completed: Project overview and rubric reviewed.
-- [ ] Step 2 in progress: Write/expand tests first and execute failing test run (Red).
-- [ ] Step 3 pending: Implement backend logic to satisfy unit tests.
-- [ ] Step 4 pending: Implement API endpoints to satisfy integration tests.
-- [ ] Step 5 pending: Add reflection in `starter/README.md`.
+- [x] Step 2 completed: Tests expanded and red/green cycle executed.
+- [x] Step 3 completed: Backend logic implemented and covered by unit tests.
+- [x] Step 4 completed: API implemented with integration tests.
+- [x] Step 5 completed: Reflection added to `starter/README.md`.
+- [x] Post-review enhancements completed: consistent error handling, customer filtering, delete endpoint, API docs, and Dockerfile.
