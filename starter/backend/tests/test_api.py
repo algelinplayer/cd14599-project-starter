@@ -96,3 +96,53 @@ def test_static_routes_return_assets(client):
 
     assert index_response.status_code == 200
     assert css_response.status_code == 200
+
+
+def test_list_orders_api_filter_by_customer_id(client):
+    client.post('/api/orders', json={"order_id": "CUSTA1", "item_name": "A", "quantity": 1, "customer_id": "C100"})
+    client.post('/api/orders', json={"order_id": "CUSTB1", "item_name": "B", "quantity": 1, "customer_id": "C200"})
+
+    response = client.get('/api/orders?customer_id=C100')
+
+    assert response.status_code == 200
+    assert len(response.json) == 1
+    assert response.json[0]['order_id'] == "CUSTA1"
+
+
+def test_list_orders_api_filter_by_customer_and_status(client):
+    client.post('/api/orders', json={"order_id": "COMB1", "item_name": "A", "quantity": 1, "customer_id": "C300", "status": "pending"})
+    client.post('/api/orders', json={"order_id": "COMB2", "item_name": "B", "quantity": 1, "customer_id": "C300", "status": "shipped"})
+    client.post('/api/orders', json={"order_id": "COMB3", "item_name": "C", "quantity": 1, "customer_id": "C400", "status": "pending"})
+
+    response = client.get('/api/orders?customer_id=C300&status=pending')
+
+    assert response.status_code == 200
+    assert len(response.json) == 1
+    assert response.json[0]['order_id'] == "COMB1"
+
+
+def test_list_orders_api_filter_by_customer_empty_returns_bad_request(client):
+    response = client.get('/api/orders?customer_id=%20')
+
+    assert response.status_code == 400
+    assert "error" in response.json
+
+
+def test_delete_order_api_success(client):
+    client.post('/api/orders', json={
+        "order_id": "DEL001", "item_name": "Test Item", "quantity": 1, "customer_id": "C1"
+    })
+
+    delete_response = client.delete('/api/orders/DEL001')
+    get_response = client.get('/api/orders/DEL001')
+
+    assert delete_response.status_code == 204
+    assert get_response.status_code == 404
+    assert "error" in get_response.json
+
+
+def test_delete_order_api_not_found(client):
+    response = client.delete('/api/orders/NONEXISTENT')
+
+    assert response.status_code == 404
+    assert response.json == {"error": "Order with ID 'NONEXISTENT' does not exist."}

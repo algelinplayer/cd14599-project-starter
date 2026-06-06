@@ -62,22 +62,39 @@ def update_order_status_api(order_id):
     data = request.get_json(silent=True) or {}
     try:
         updated_order = order_tracker.update_order_status(order_id, data.get('new_status'))
-        return jsonify(updated_order), 200
     except ValueError as exc:
-        status_code = 404 if 'does not exist' in str(exc) else 400
-        return jsonify({'error': str(exc)}), status_code
+        if 'does not exist' in str(exc):
+            raise ApiError(str(exc), 404) from exc
+        raise
+    return jsonify(updated_order), 200
 
 @app.route('/api/orders', methods=['GET'])
 def list_orders_api():
     status_filter = request.args.get('status')
+    customer_id_filter = request.args.get('customer_id')
+
+    if status_filter is None:
+        orders = order_tracker.list_all_orders()
+    else:
+        orders = order_tracker.list_orders_by_status(status_filter)
+
+    if customer_id_filter is not None:
+        if not customer_id_filter.strip():
+            raise ApiError('customer_id must be a non-empty string.', 400)
+        orders = [order for order in orders if order.get('customer_id') == customer_id_filter]
+
+    return jsonify(orders), 200
+
+
+@app.route('/api/orders/<string:order_id>', methods=['DELETE'])
+def delete_order_api(order_id):
     try:
-        if status_filter is None:
-            orders = order_tracker.list_all_orders()
-        else:
-            orders = order_tracker.list_orders_by_status(status_filter)
-        return jsonify(orders), 200
+        order_tracker.delete_order_by_id(order_id)
     except ValueError as exc:
-        return jsonify({'error': str(exc)}), 400
+        if 'does not exist' in str(exc):
+            raise ApiError(str(exc), 404) from exc
+        raise
+    return '', 204
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", debug=True)
